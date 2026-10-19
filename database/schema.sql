@@ -80,7 +80,7 @@ CREATE TRIGGER trg_files_updated_at
 INSERT INTO users (username, password_hash, full_name, role)
 VALUES (
     'admin',
-    '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', -- "admin123"
+    '$2a$10$.4h4GonB27Ajqa2iAhTJ..h7G7.le.8dC91IgiRyu2bTBcMh9gA7u', -- "admin123"
     'System Administrator',
     'admin'
 )
