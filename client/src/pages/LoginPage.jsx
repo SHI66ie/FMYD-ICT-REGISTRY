@@ -27,13 +27,13 @@ export default function LoginPage() {
     setError('');
     try {
       await login(form.username.trim(), form.password);
-      toast.success('Welcome back!');
+      toast.success('Welcome to FMYD ICT Registry');
       navigate('/dashboard');
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
-        'Invalid username or password. Please try again.';
+        'Invalid username or password. Please verify credentials.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -41,29 +41,43 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-[#041c10] via-[#093a22] to-[#041c10] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorative circles */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#008751]/20 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-[#008751]/20 blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-emerald-100">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-primary-700 to-primary-500 px-8 py-8 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gradient-to-b from-[#0a3821] to-[#008751] px-8 py-8 text-center text-white relative">
+            {/* Top Nigerian Flag Ribbon */}
+            <div className="flex h-1.5 w-24 mx-auto mb-4 rounded-full overflow-hidden shadow-sm">
+              <div className="w-1/3 bg-[#008751]" />
+              <div className="w-1/3 bg-white" />
+              <div className="w-1/3 bg-[#008751]" />
+            </div>
+
+            {/* Shield / Logo */}
+            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-inner">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
               </svg>
             </div>
-            <h1 className="text-white font-bold text-xl">FMYD ICT File Registry</h1>
-            <p className="text-primary-100 text-sm mt-1">Federal Ministry of Youth Development</p>
+
+            <p className="text-[11px] font-semibold tracking-widest uppercase text-emerald-200">Federal Republic of Nigeria</p>
+            <h1 className="text-white font-bold text-lg md:text-xl tracking-tight mt-0.5">FMYD ICT File Registry</h1>
+            <p className="text-emerald-100/90 text-xs mt-1">Federal Ministry of Youth Development</p>
           </div>
 
           {/* Form */}
-          <div className="px-8 py-8">
-            <h2 className="text-slate-800 font-semibold text-lg mb-1">Sign in to your account</h2>
-            <p className="text-slate-500 text-sm mb-6">Enter your credentials to access the registry</p>
+          <div className="px-8 py-7 bg-white">
+            <h2 className="text-slate-800 font-bold text-base mb-1">Department Portal Login</h2>
+            <p className="text-slate-500 text-xs mb-5">Enter your official credentials to access the registry</p>
 
             {error && (
-              <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+              <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3.5 py-2.5 text-xs">
                 <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -75,12 +89,12 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Username */}
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">
+                <label htmlFor="username" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Username
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
@@ -92,9 +106,9 @@ export default function LoginPage() {
                     autoComplete="username"
                     value={form.username}
                     onChange={handleChange}
-                    placeholder="Enter your username"
-                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800
-                      focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                    placeholder="e.g. admin"
+                    className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800
+                      focus:outline-none focus:ring-2 focus:ring-[#008751] focus:border-[#008751]
                       placeholder:text-slate-400 transition-colors"
                   />
                 </div>
@@ -102,12 +116,12 @@ export default function LoginPage() {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+                <label htmlFor="password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
@@ -119,9 +133,9 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     value={form.password}
                     onChange={handleChange}
-                    placeholder="Enter your password"
-                    className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800
-                      focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                    placeholder="Enter password"
+                    className="w-full pl-9 pr-10 py-2 border border-slate-300 rounded-lg text-sm text-slate-800
+                      focus:outline-none focus:ring-2 focus:ring-[#008751] focus:border-[#008751]
                       placeholder:text-slate-400 transition-colors"
                   />
                   <button
@@ -150,22 +164,22 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400
-                  text-white font-medium text-sm rounded-lg transition-colors
-                  focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-                  flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 bg-[#008751] hover:bg-[#007242] disabled:bg-emerald-300
+                  text-white font-semibold text-sm rounded-lg transition-all shadow-md hover:shadow-lg
+                  focus:outline-none focus:ring-2 focus:ring-[#008751] focus:ring-offset-2
+                  flex items-center justify-center gap-2 mt-2"
               >
                 {loading && (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 )}
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? 'Authenticating...' : 'Sign In to Registry'}
               </button>
             </form>
           </div>
         </div>
 
-        <p className="text-center text-slate-400 text-xs mt-6">
-          © {new Date().getFullYear()} Federal Ministry of Youth Development — ICT Department
+        <p className="text-center text-emerald-200/60 text-xs mt-6">
+          © {new Date().getFullYear()} Federal Ministry of Youth Development · ICT Department
         </p>
       </div>
     </div>

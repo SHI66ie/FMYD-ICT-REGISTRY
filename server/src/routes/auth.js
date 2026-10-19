@@ -65,7 +65,10 @@ router.post('/register', authMiddleware, async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 
-    const { username, password, full_name, role } = req.body;
+    const username = req.body.username;
+    const password = req.body.password;
+    const full_name = req.body.full_name || req.body.fullName;
+    const role = req.body.role;
 
     if (!username || !password || !full_name) {
       return res.status(400).json({ error: 'username, password, and full_name are required' });

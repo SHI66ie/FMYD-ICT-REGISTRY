@@ -1,17 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #f0f4ff;
-  --color-primary-100: #e0eaff;
-  --color-primary-200: #c0d0fe;
-  --color-primary-300: #93affe;
-  --color-primary-400: #6080fd;
-  --color-primary-500: #3b57f8;
-  --color-primary-600: #2436ed;
-  --color-primary-700: #1c28d9;
-  --color-primary-800: #1d24af;
-  --color-primary-900: #1d2489;
-  --color-primary-950: #141654;
+  /* FMYD Official Green Palette (Nigeria National Green #008751) */
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #008751;
+  --color-primary-600: #007242;
+  --color-primary-700: #005c35;
+  --color-primary-800: #00482a;
+  --color-primary-900: #003b23;
+  --color-primary-950: #002415;
+
+  --color-fmyd-dark: #0a3821;
+  --color-fmyd-darker: #062717;
+  --color-fmyd-green: #008751;
+  --color-fmyd-light: #f4f8f5;
 }
 
 /* Base styles */
@@ -34,7 +40,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f1f5f9;
+  background-color: #f4f8f5;
   color: #1e293b;
 }
 
@@ -44,14 +50,14 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f4f8f5;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #a7f3d0;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #008751;
 }
 
 /* Print styles */

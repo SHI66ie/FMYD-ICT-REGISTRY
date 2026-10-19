@@ -19,12 +19,15 @@ function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/60 backdrop-blur-2xs"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-10">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h3 className="font-semibold text-slate-800">{title}</h3>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-emerald-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-emerald-50 bg-emerald-50/50">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-4 rounded-full bg-[#008751]" />
+            <h3 className="font-bold text-slate-800 text-sm">{title}</h3>
+          </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -60,7 +63,7 @@ export default function UsersPage() {
     try {
       const res = await getUsers();
       const data = res.data;
-      setUsers(Array.isArray(data) ? data : data.users || []);
+      setUsers(Array.isArray(data) ? data : data.users || data.data || []);
     } catch {
       toast.error('Failed to load users');
     } finally {
@@ -77,7 +80,7 @@ export default function UsersPage() {
 
   const openEditModal = (user) => {
     setForm({
-      fullName: user.fullName || '',
+      fullName: user.fullName || user.full_name || '',
       username: user.username || '',
       password: '',
       role: user.role || 'staff',
@@ -121,6 +124,7 @@ export default function UsersPage() {
       if (modalMode === 'add') {
         await register({
           fullName: form.fullName.trim(),
+          full_name: form.fullName.trim(),
           username: form.username.trim(),
           password: form.password,
           role: form.role,
@@ -129,6 +133,7 @@ export default function UsersPage() {
       } else {
         const payload = {
           fullName: form.fullName.trim(),
+          full_name: form.fullName.trim(),
           username: form.username.trim(),
           role: form.role,
         };
@@ -139,7 +144,7 @@ export default function UsersPage() {
       closeModal();
       fetchUsers();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Failed to save user';
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to save user';
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -153,7 +158,7 @@ export default function UsersPage() {
       toast.error('You cannot delete your own account');
       return;
     }
-    if (!window.confirm(`Delete user "${user.fullName || user.username}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete user "${user.fullName || user.full_name || user.username}"? This cannot be undone.`)) return;
     setDeletingId(uid);
     try {
       await deleteUser(uid);
@@ -168,7 +173,7 @@ export default function UsersPage() {
 
   const FormField = ({ label, name, type = 'text', placeholder = '', required = false }) => (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
+      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
@@ -178,7 +183,7 @@ export default function UsersPage() {
         onChange={handleChange}
         placeholder={placeholder}
         autoComplete={name === 'password' ? 'new-password' : 'off'}
-        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#008751] transition-colors ${
           formErrors[name] ? 'border-red-400 bg-red-50' : 'border-slate-300'
         }`}
       />
@@ -192,46 +197,46 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-slate-800">User Management</h2>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {loading ? 'Loading...' : `${users.length} user${users.length !== 1 ? 's' : ''}`}
+            <h2 className="text-xl font-bold text-slate-800 tracking-tight">Staff & Officers Management</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Authorized registry personnel accounts ({users.length} registered)
             </p>
           </div>
           <button
             onClick={openAddModal}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#008751] hover:bg-[#007242] text-white text-xs md:text-sm font-bold rounded-lg transition-all shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
             </svg>
             Add New User
           </button>
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-emerald-100 shadow-xs overflow-hidden">
           {loading ? (
             <div className="flex justify-center items-center py-16">
-              <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-3 border-[#008751] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : users.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
-              <svg className="w-12 h-12 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 mx-auto mb-3 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-              <p className="text-sm">No users found.</p>
+              <p className="text-sm font-medium text-slate-600">No users found.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide border-b border-slate-100">
-                    <th className="px-5 py-3 text-left font-semibold">Full Name</th>
-                    <th className="px-5 py-3 text-left font-semibold">Username</th>
-                    <th className="px-5 py-3 text-left font-semibold">Role</th>
-                    <th className="px-5 py-3 text-left font-semibold">Joined</th>
-                    <th className="px-5 py-3 text-left font-semibold">Actions</th>
+                  <tr className="bg-emerald-50/60 text-slate-700 text-xs uppercase tracking-wider border-b border-emerald-100">
+                    <th className="px-5 py-3 text-left font-bold">Full Name</th>
+                    <th className="px-5 py-3 text-left font-bold">Username</th>
+                    <th className="px-5 py-3 text-left font-bold">Role</th>
+                    <th className="px-5 py-3 text-left font-bold">Date Created</th>
+                    <th className="px-5 py-3 text-left font-bold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -239,41 +244,44 @@ export default function UsersPage() {
                     const uid = u._id || u.id;
                     const cuid = currentUser?._id || currentUser?.id;
                     const isSelf = uid === cuid;
+                    const fullName = u.fullName || u.full_name;
+                    const createdAt = u.createdAt || u.created_at;
+
                     return (
-                      <tr key={uid} className={`hover:bg-slate-50 transition-colors ${isSelf ? 'bg-blue-50/40' : ''}`}>
+                      <tr key={uid} className={`hover:bg-emerald-50/20 transition-colors ${isSelf ? 'bg-emerald-50/30' : ''}`}>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
-                              {u.fullName?.charAt(0)?.toUpperCase() || u.username?.charAt(0)?.toUpperCase()}
+                            <div className="w-8 h-8 rounded-full bg-[#008751] flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-2xs">
+                              {fullName?.charAt(0)?.toUpperCase() || u.username?.charAt(0)?.toUpperCase()}
                             </div>
-                            <span className="font-medium text-slate-800">
-                              {u.fullName || '—'}
-                              {isSelf && <span className="ml-2 text-xs text-primary-600 font-normal">(You)</span>}
+                            <span className="font-semibold text-slate-800">
+                              {fullName || '—'}
+                              {isSelf && <span className="ml-2 text-[10px] bg-emerald-100 text-[#008751] px-1.5 py-0.5 rounded font-bold uppercase">You</span>}
                             </span>
                           </div>
                         </td>
                         <td className="px-5 py-3.5 text-slate-600 font-mono text-xs">{u.username}</td>
                         <td className="px-5 py-3.5">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize ${
                               u.role === 'admin'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-slate-100 text-slate-700'
+                                ? 'bg-emerald-100 text-[#008751] border border-emerald-300'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
                             }`}
                           >
                             {u.role}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-slate-500 text-xs">
-                          {u.createdAt
-                            ? (() => { try { return format(parseISO(u.createdAt), 'dd MMM yyyy'); } catch { return '—'; } })()
+                          {createdAt
+                            ? (() => { try { return format(parseISO(createdAt), 'dd MMM yyyy'); } catch { return '—'; } })()
                             : '—'}
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => openEditModal(u)}
-                              className="px-2.5 py-1 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 rounded transition-colors"
+                              className="px-2.5 py-1 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 rounded border border-amber-200 transition-colors"
                             >
                               Edit
                             </button>
@@ -281,7 +289,7 @@ export default function UsersPage() {
                               onClick={() => handleDelete(u)}
                               disabled={isSelf || deletingId === uid}
                               title={isSelf ? 'Cannot delete your own account' : 'Delete user'}
-                              className="px-2.5 py-1 text-xs text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="px-2.5 py-1 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded border border-red-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               {deletingId === uid ? '...' : 'Delete'}
                             </button>
@@ -300,50 +308,50 @@ export default function UsersPage() {
       {/* Add / Edit Modal */}
       {modalMode && (
         <Modal
-          title={modalMode === 'add' ? 'Add New User' : 'Edit User'}
+          title={modalMode === 'add' ? 'Register New Staff User' : 'Edit User Information'}
           onClose={closeModal}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField label="Full Name" name="fullName" placeholder="e.g. John Doe" required />
-            <FormField label="Username" name="username" placeholder="e.g. johndoe" required />
+            <FormField label="Full Name" name="fullName" placeholder="e.g. John Okon" required />
+            <FormField label="Username" name="username" placeholder="e.g. johno" required />
             <FormField
-              label={modalMode === 'edit' ? 'New Password (leave blank to keep)' : 'Password'}
+              label={modalMode === 'edit' ? 'New Password (leave blank to keep current)' : 'Password'}
               name="password"
               type="password"
               placeholder={modalMode === 'edit' ? 'Leave blank to keep current' : 'Min. 6 characters'}
               required={modalMode === 'add'}
             />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Role / Permissions</label>
               <select
                 name="role"
                 value={form.role}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008751]"
               >
                 {ROLE_OPTIONS.map((r) => (
-                  <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                  <option key={r} value={r}>{r.toUpperCase()}</option>
                 ))}
               </select>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-3">
               <button
                 type="button"
                 onClick={closeModal}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-50 rounded-lg text-sm transition-colors"
+                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-semibold transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#008751] hover:bg-[#007242] disabled:bg-emerald-300 text-white rounded-lg text-sm font-bold transition-all shadow-sm"
               >
                 {submitting && (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 )}
-                {submitting ? 'Saving...' : modalMode === 'add' ? 'Create User' : 'Update User'}
+                {submitting ? 'Saving...' : modalMode === 'add' ? 'Create User' : 'Save Changes'}
               </button>
             </div>
           </form>

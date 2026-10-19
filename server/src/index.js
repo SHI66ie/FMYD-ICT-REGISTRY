@@ -21,9 +21,11 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files statically
+// Serve uploaded files statically (both /uploads and /api/uploads)
 const uploadDir = process.env.UPLOAD_DIR || 'uploads';
-app.use('/uploads', express.static(path.join(__dirname, '..', uploadDir)));
+const uploadStaticPath = path.join(__dirname, '..', uploadDir);
+app.use('/uploads', express.static(uploadStaticPath));
+app.use('/api/uploads', express.static(uploadStaticPath));
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);

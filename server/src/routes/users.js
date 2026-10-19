@@ -16,6 +16,15 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function formatUser(u) {
+  if (!u) return null;
+  return {
+    ...u,
+    fullName: u.full_name,
+    createdAt: u.created_at,
+  };
+}
+
 // ─── GET /api/users ───────────────────────────────────────────────────────────
 // Admin only — list all users
 router.get('/', requireAdmin, async (req, res, next) => {
@@ -23,7 +32,8 @@ router.get('/', requireAdmin, async (req, res, next) => {
     const { rows } = await pool.query(
       'SELECT id, username, full_name, role, created_at FROM users ORDER BY created_at DESC'
     );
-    return res.json({ users: rows });
+    const users = rows.map(formatUser);
+    return res.json({ users, data: users });
   } catch (err) {
     next(err);
   }
@@ -34,7 +44,9 @@ router.get('/', requireAdmin, async (req, res, next) => {
 router.put('/:id', requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { full_name, role, password } = req.body;
+    const full_name = req.body.full_name || req.body.fullName;
+    const role = req.body.role;
+    const password = req.body.password;
 
     // Check user exists
     const existing = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
@@ -48,9 +60,9 @@ router.put('/:id', requireAdmin, async (req, res, next) => {
     }
 
     let password_hash = null;
-    if (password) {
+    if (password && password.trim()) {
       const salt = await bcrypt.genSalt(10);
-      password_hash = await bcrypt.hash(password, salt);
+      password_hash = await bcrypt.hash(password.trim(), salt);
     }
 
     const { rows } = await pool.query(
@@ -68,7 +80,7 @@ router.put('/:id', requireAdmin, async (req, res, next) => {
       ]
     );
 
-    return res.json({ user: rows[0] });
+    return res.json({ user: formatUser(rows[0]) });
   } catch (err) {
     next(err);
   }

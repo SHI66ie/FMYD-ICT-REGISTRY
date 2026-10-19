@@ -9,19 +9,41 @@ const router = express.Router();
 // All file routes require authentication
 router.use(authMiddleware);
 
+// Helper to provide both snake_case and camelCase keys
+function formatFile(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    fileNumber: row.file_number,
+    dateLogged: row.date_logged,
+    referenceNumber: row.reference_number,
+    actionOfficer: row.action_officer,
+    scanPath: row.scan_path,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    createdByName: row.created_by_name,
+  };
+}
+
 // ─── GET /api/files ───────────────────────────────────────────────────────────
-// Supports: ?page=1&limit=20&q=search&type=incoming|outgoing&status=Pending&date_from=YYYY-MM-DD&date_to=YYYY-MM-DD
 router.get('/', async (req, res, next) => {
   try {
     const {
       page = 1,
       limit = 20,
       q,
+      search,
       type,
       status,
       date_from,
+      startDate,
       date_to,
+      endDate,
     } = req.query;
+
+    const searchTerm = (q || search || '').trim();
+    const filterDateFrom = date_from || startDate;
+    const filterDateTo = date_to || endDate;
 
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
@@ -32,35 +54,38 @@ router.get('/', async (req, res, next) => {
     const params = [];
     let paramIndex = 1;
 
-    if (q && q.trim()) {
+    if (searchTerm) {
       conditions.push(
         `(f.title ILIKE $${paramIndex} OR f.file_number ILIKE $${paramIndex} OR f.reference_number ILIKE $${paramIndex} OR f.origin ILIKE $${paramIndex} OR f.action_officer ILIKE $${paramIndex})`
       );
-      params.push(`%${q.trim()}%`);
+      params.push(`%${searchTerm}%`);
       paramIndex++;
     }
 
-    if (type && ['incoming', 'outgoing'].includes(type)) {
+    if (type && type.toLowerCase() !== 'all' && ['incoming', 'outgoing'].includes(type.toLowerCase())) {
       conditions.push(`f.type = $${paramIndex}`);
-      params.push(type);
+      params.push(type.toLowerCase());
       paramIndex++;
     }
 
-    if (status && ['Pending', 'In Progress', 'Completed', 'Returned'].includes(status)) {
-      conditions.push(`f.status = $${paramIndex}`);
-      params.push(status);
-      paramIndex++;
+    if (status && status.toLowerCase() !== 'all') {
+      const formattedStatus = status.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      if (['Pending', 'In Progress', 'Completed', 'Returned'].includes(formattedStatus)) {
+        conditions.push(`f.status = $${paramIndex}`);
+        params.push(formattedStatus);
+        paramIndex++;
+      }
     }
 
-    if (date_from) {
+    if (filterDateFrom) {
       conditions.push(`f.date_logged >= $${paramIndex}`);
-      params.push(date_from);
+      params.push(filterDateFrom);
       paramIndex++;
     }
 
-    if (date_to) {
+    if (filterDateTo) {
       conditions.push(`f.date_logged <= $${paramIndex}`);
-      params.push(date_to);
+      params.push(filterDateTo);
       paramIndex++;
     }
 
@@ -89,14 +114,18 @@ router.get('/', async (req, res, next) => {
       dataParams
     );
 
+    const formattedRows = rows.map(formatFile);
+
     return res.json({
-      data: rows,
+      data: formattedRows,
+      files: formattedRows,
       pagination: {
         page: pageNum,
         limit: limitNum,
         total,
         total_pages: Math.ceil(total / limitNum),
       },
+      total,
     });
   } catch (err) {
     next(err);
@@ -106,18 +135,16 @@ router.get('/', async (req, res, next) => {
 // ─── POST /api/files ──────────────────────────────────────────────────────────
 router.post('/', upload.single('scan'), async (req, res, next) => {
   try {
-    const {
-      file_number,
-      title,
-      date_logged,
-      reference_number,
-      type,
-      origin,
-      destination,
-      action_officer,
-      status,
-      remarks,
-    } = req.body;
+    const file_number = req.body.file_number || req.body.fileNumber;
+    const title = req.body.title;
+    const date_logged = req.body.date_logged || req.body.dateLogged;
+    const reference_number = req.body.reference_number || req.body.referenceNumber;
+    const type = (req.body.type || '').toLowerCase();
+    const origin = req.body.origin;
+    const destination = req.body.destination;
+    const action_officer = req.body.action_officer || req.body.actionOfficer;
+    const status = req.body.status;
+    const remarks = req.body.remarks;
 
     // Required field validation
     if (!file_number || !title || !date_logged || !type) {
@@ -168,7 +195,7 @@ router.post('/', upload.single('scan'), async (req, res, next) => {
       ]
     );
 
-    return res.status(201).json({ file: rows[0] });
+    return res.status(201).json({ file: formatFile(rows[0]) });
   } catch (err) {
     next(err);
   }
@@ -193,7 +220,7 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    return res.json({ file: rows[0] });
+    return res.json({ file: formatFile(rows[0]) });
   } catch (err) {
     next(err);
   }
@@ -210,18 +237,16 @@ router.put('/:id', upload.single('scan'), async (req, res, next) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const {
-      file_number,
-      title,
-      date_logged,
-      reference_number,
-      type,
-      origin,
-      destination,
-      action_officer,
-      status,
-      remarks,
-    } = req.body;
+    const file_number = req.body.file_number || req.body.fileNumber;
+    const title = req.body.title;
+    const date_logged = req.body.date_logged || req.body.dateLogged;
+    const reference_number = req.body.reference_number !== undefined ? req.body.reference_number : req.body.referenceNumber;
+    const type = req.body.type ? req.body.type.toLowerCase() : undefined;
+    const origin = req.body.origin;
+    const destination = req.body.destination;
+    const action_officer = req.body.action_officer !== undefined ? req.body.action_officer : req.body.actionOfficer;
+    const status = req.body.status;
+    const remarks = req.body.remarks;
 
     if (type && !['incoming', 'outgoing'].includes(type)) {
       return res.status(400).json({ error: 'type must be "incoming" or "outgoing"' });
@@ -255,19 +280,19 @@ router.put('/:id', upload.single('scan'), async (req, res, next) => {
         file_number ? file_number.trim() : null,
         title ? title.trim() : null,
         date_logged || null,
-        reference_number !== undefined ? reference_number.trim() : null,
+        reference_number !== undefined ? (reference_number ? reference_number.trim() : null) : null,
         type || null,
-        origin !== undefined ? origin.trim() : null,
-        destination !== undefined ? destination.trim() : null,
-        action_officer !== undefined ? action_officer.trim() : null,
+        origin !== undefined ? (origin ? origin.trim() : null) : null,
+        destination !== undefined ? (destination ? destination.trim() : null) : null,
+        action_officer !== undefined ? (action_officer ? action_officer.trim() : null) : null,
         status || null,
-        remarks !== undefined ? remarks.trim() : null,
+        remarks !== undefined ? (remarks ? remarks.trim() : null) : null,
         scan_path,
         id,
       ]
     );
 
-    return res.json({ file: rows[0] });
+    return res.json({ file: formatFile(rows[0]) });
   } catch (err) {
     next(err);
   }
