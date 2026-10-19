@@ -1,0 +1,66 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+const authRoutes = require('./routes/auth');
+const filesRoutes = require('./routes/files');
+const usersRoutes = require('./routes/users');
+const statsRoutes = require('./routes/stats');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// ─── Middleware ───────────────────────────────────────────────────────────────
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files statically
+const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+app.use('/uploads', express.static(path.join(__dirname, '..', uploadDir)));
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/api/files', filesRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/stats', statsRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ─── 404 Handler ─────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err.stack || err.message);
+
+  // Multer errors
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ error: 'File too large. Maximum size is 10 MB.' });
+  }
+  if (err.message === 'INVALID_FILE_TYPE') {
+    return res.status(400).json({ error: 'Invalid file type. Only JPG, PNG, and PDF are allowed.' });
+  }
+
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+  });
+});
+
+// ─── Start Server ─────────────────────────────────────────────────────────────
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅  FMYD ICT Registry API running on http://0.0.0.0:${PORT}`);
+  console.log(`   Upload directory: ${path.join(__dirname, '..', uploadDir)}`);
+});
