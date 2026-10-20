@@ -1,26 +1,21 @@
 # ============================================================
 #  FMYD ICT Registry — Automatic Cloud Backup Script
 #  Backs up:
-#    1. PostgreSQL database  → Google Drive:/FMYD-Backup/database/
+#    1. SQLite database      → Google Drive:/FMYD-Backup/database/
 #    2. Uploaded files       → Google Drive:/FMYD-Backup/uploads/
 #
 #  Requirements:
 #    - rclone configured with a remote named "gdrive" (run setup-backup.bat first)
-#    - pg_dump available (comes with PostgreSQL installation)
 # ============================================================
 
 # ─── Config ──────────────────────────────────────────────────
 $ScriptDir    = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ProjectRoot  = Split-Path -Parent $ScriptDir
 
-# Load .env from server folder
+# Load .env from server folder if present
 $EnvFile = Join-Path $ProjectRoot "server\.env"
-$DB_HOST = "localhost"
-$DB_PORT = "5432"
-$DB_NAME = "fmyd_registry"
-$DB_USER = "postgres"
-$DB_PASSWORD = "postgres"
 $UPLOAD_DIR  = "uploads"
+$DATA_DIR    = "data"
 
 if (Test-Path $EnvFile) {
     Get-Content $EnvFile | ForEach-Object {
@@ -28,22 +23,19 @@ if (Test-Path $EnvFile) {
             $key   = $matches[1].Trim()
             $value = $matches[2].Trim()
             switch ($key) {
-                "DB_HOST"     { $DB_HOST     = $value }
-                "DB_PORT"     { $DB_PORT     = $value }
-                "DB_NAME"     { $DB_NAME     = $value }
-                "DB_USER"     { $DB_USER     = $value }
-                "DB_PASSWORD" { $DB_PASSWORD = $value }
                 "UPLOAD_DIR"  { $UPLOAD_DIR  = $value }
+                "DATA_DIR"    { $DATA_DIR    = $value }
             }
         }
     }
 }
 
+$DbPath       = Join-Path $ProjectRoot "server\$DATA_DIR\fmyd_registry.db"
 $UploadsPath  = Join-Path $ProjectRoot "server\$UPLOAD_DIR"
 $DumpDir      = Join-Path $ScriptDir "db-dumps"
 $LogFile      = Join-Path $ScriptDir "backup.log"
 $Timestamp    = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-$DumpFile     = Join-Path $DumpDir "fmyd_registry_$Timestamp.sql"
+$SnapshotFile = Join-Path $DumpDir "fmyd_registry_$Timestamp.db"
 
 # Google Drive remote name (set during rclone config)
 $GDriveRemote = "gdrive"
@@ -83,44 +75,26 @@ if (-not (Test-Path $DumpDir)) {
     New-Item -ItemType Directory -Path $DumpDir | Out-Null
 }
 
-# ─── Step 1: PostgreSQL Database Dump ────────────────────────
-Log "📦 Starting database dump..."
+# ─── Step 1: SQLite Database Snapshot ────────────────────────
+Log "📦 Starting database snapshot..."
 
-# Find pg_dump
-$pgDump = Get-Command "pg_dump" -ErrorAction SilentlyContinue
-if (-not $pgDump) {
-    # Try common PostgreSQL install paths
-    $pgPaths = @(
-        "C:\Program Files\PostgreSQL\17\bin\pg_dump.exe",
-        "C:\Program Files\PostgreSQL\16\bin\pg_dump.exe",
-        "C:\Program Files\PostgreSQL\15\bin\pg_dump.exe",
-        "C:\Program Files\PostgreSQL\14\bin\pg_dump.exe"
-    )
-    foreach ($p in $pgPaths) {
-        if (Test-Path $p) { $pgDump = $p; break }
-    }
-}
-
-if (-not $pgDump) {
-    Log "❌ pg_dump not found. Please ensure PostgreSQL is installed."
+if (-not (Test-Path $DbPath)) {
+    Log "❌ Database file not found at: $DbPath"
     exit 1
 }
 
-$env:PGPASSWORD = $DB_PASSWORD
-$pgDumpCmd = if ($pgDump -is [System.Management.Automation.ApplicationInfo]) { $pgDump.Source } else { $pgDump }
-
-& $pgDumpCmd -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -F p -f $DumpFile 2>&1 | Out-Null
-
-if ($LASTEXITCODE -eq 0 -and (Test-Path $DumpFile)) {
-    $sizeMB = [math]::Round((Get-Item $DumpFile).Length / 1MB, 2)
-    Log "✅ Database dumped successfully → $DumpFile ($sizeMB MB)"
-} else {
-    Log "❌ Database dump failed (exit code: $LASTEXITCODE)"
+# Safely copy SQLite DB file snapshot
+try {
+    Copy-Item -Path $DbPath -Destination $SnapshotFile -Force
+    $sizeMB = [math]::Round((Get-Item $SnapshotFile).Length / 1MB, 2)
+    Log "✅ Database snapshot created successfully → $SnapshotFile ($sizeMB MB)"
+} catch {
+    Log "❌ Database snapshot failed: $_"
     exit 1
 }
 
-# ─── Step 2: Upload DB Dump to Google Drive ──────────────────
-Log "☁️  Uploading database dump to Google Drive..."
+# ─── Step 2: Upload DB Snapshot to Google Drive ──────────────
+Log "☁️  Uploading database snapshot to Google Drive..."
 
 $rclone = Get-Command "rclone" -ErrorAction SilentlyContinue
 if (-not $rclone) {
@@ -128,12 +102,12 @@ if (-not $rclone) {
     exit 1
 }
 
-& rclone copy $DumpFile "${GDriveRemote}:${GDriveFolder}/database/" --transfers=4 --retries=3 2>&1 | Out-Null
+& rclone copy $SnapshotFile "${GDriveRemote}:${GDriveFolder}/database/" --transfers=4 --retries=3 2>&1 | Out-Null
 
 if ($LASTEXITCODE -eq 0) {
-    Log "✅ Database dump uploaded to Google Drive"
+    Log "✅ Database snapshot uploaded to Google Drive"
 } else {
-    Log "❌ Failed to upload database dump (rclone exit: $LASTEXITCODE)"
+    Log "❌ Failed to upload database snapshot (rclone exit: $LASTEXITCODE)"
 }
 
 # ─── Step 3: Sync Uploads Folder to Google Drive ─────────────
@@ -152,7 +126,7 @@ if (Test-Path $UploadsPath) {
 
 # ─── Step 4: Cleanup Old Local Dumps (keep last 7) ───────────
 Log "🧹 Cleaning up old local database dumps (keeping last 7)..."
-$dumps = Get-ChildItem $DumpDir -Filter "*.sql" | Sort-Object LastWriteTime -Descending
+$dumps = Get-ChildItem $DumpDir -Filter "*.db" | Sort-Object LastWriteTime -Descending
 if ($dumps.Count -gt 7) {
     $dumps | Select-Object -Skip 7 | ForEach-Object {
         Remove-Item $_.FullName -Force
@@ -163,6 +137,6 @@ if ($dumps.Count -gt 7) {
 Log "========================================"
 Log "✅ Backup completed successfully!"
 Log "   Google Drive folder: $GDriveFolder/"
-Log "     ├── database/  (SQL dumps)"
+Log "     ├── database/  (SQLite database snapshots)"
 Log "     └── uploads/   (scanned files)"
 Log "========================================"

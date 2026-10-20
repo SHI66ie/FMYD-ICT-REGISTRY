@@ -33,7 +33,6 @@ namespace FMYD.ICT.Registry
 
             rootDir = AppDomain.CurrentDomain.BaseDirectory;
 
-            EnsurePostgresRunning();
             EnsureServerRunning();
             SetupTrayIcon();
             OpenAppWindow();
@@ -43,36 +42,7 @@ namespace FMYD.ICT.Registry
 
         private static void EnsurePostgresRunning()
         {
-            try
-            {
-                ProcessStartInfo psi = new ProcessStartInfo();
-                psi.FileName = "net.exe";
-                psi.Arguments = "start postgresql-x64-18";
-                psi.WindowStyle = ProcessWindowStyle.Hidden;
-                psi.CreateNoWindow = true;
-                psi.UseShellExecute = false;
-                Process p = Process.Start(psi);
-                p.WaitForExit(4000);
-            }
-            catch { }
-
-            string pgCtl = @"C:\Program Files\PostgreSQL\18\bin\pg_ctl.exe";
-            string pgData = @"C:\Program Files\PostgreSQL\18\data";
-            if (File.Exists(pgCtl) && Directory.Exists(pgData))
-            {
-                try
-                {
-                    ProcessStartInfo psi = new ProcessStartInfo();
-                    psi.FileName = pgCtl;
-                    psi.Arguments = string.Format("start -D \"{0}\"", pgData);
-                    psi.WindowStyle = ProcessWindowStyle.Hidden;
-                    psi.CreateNoWindow = true;
-                    psi.UseShellExecute = false;
-                    Process p = Process.Start(psi);
-                    p.WaitForExit(3000);
-                }
-                catch { }
-            }
+            // Embedded SQLite database is used - no external database server needed
         }
 
         private static bool IsServerHealthy()
@@ -104,8 +74,12 @@ namespace FMYD.ICT.Registry
             {
                 try
                 {
+                    // Check if bundled portable node.exe exists in root directory first
+                    string bundledNode = Path.Combine(rootDir, "node.exe");
+                    string nodeExe = File.Exists(bundledNode) ? bundledNode : "node.exe";
+
                     ProcessStartInfo psi = new ProcessStartInfo();
-                    psi.FileName = "node.exe";
+                    psi.FileName = nodeExe;
                     psi.Arguments = string.Format("\"{0}\"", serverEntry);
                     psi.WorkingDirectory = serverDir;
                     psi.WindowStyle = ProcessWindowStyle.Hidden;
