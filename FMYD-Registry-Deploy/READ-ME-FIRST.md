@@ -66,6 +66,38 @@ To close: right-click the tray icon → **Exit Application**
 
 ---
 
+## Google Drive Backup (Recommended)
+
+The app can automatically back up the database and uploaded scanned files to Google Drive every hour.
+
+### First-time setup:
+
+1. Open the app (double-click the desktop shortcut)
+2. Right-click the **FMYD tray icon** (bottom-right of taskbar)
+3. Click **"Setup Google Drive Backup"**
+4. Follow the steps — it will:
+   - Install **rclone** (a free backup tool)
+   - Open a browser to sign in to your Google account
+   - Create a `FMYD-Backup` folder in your Google Drive
+   - Schedule automatic hourly backups
+
+### What gets backed up:
+
+| Item | Google Drive Location |
+|---|---|
+| Database (SQL dumps) | `FMYD-Backup/database/` |
+| Scanned files (JPG/PNG/PDF) | `FMYD-Backup/uploads/` |
+
+### Manual backup:
+
+Right-click tray icon → **"Backup to Google Drive Now"**
+
+### View backup history:
+
+Right-click tray icon → **"View Backup Log"**
+
+---
+
 ## Need Help?
 
 Contact the ICT Department.

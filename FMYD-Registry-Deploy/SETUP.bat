@@ -108,6 +108,14 @@ powershell -NoProfile -Command "$wsh = New-Object -ComObject WScript.Shell; $s =
 echo  [OK] Desktop shortcut created.
 
 echo.
+echo  [Step 6] Google Drive Backup (Optional)
+echo.
+echo  To enable automatic backup to Google Drive:
+echo    Right-click the tray icon (bottom-right) after opening
+echo    the app, then click "Setup Google Drive Backup"
+echo.
+echo    OR run: backup\setup-backup.bat (as Administrator)
+echo.
 echo  =========================================================
 echo    SETUP COMPLETE!
 echo.
@@ -117,6 +125,8 @@ echo      Password: admin123
 echo.
 echo    To start the app: double-click "FMYD ICT Registry"
 echo    on your Desktop.
+echo.
+echo    Google Drive Backup: right-click tray icon after launch
 echo  =========================================================
 echo.
 pause
