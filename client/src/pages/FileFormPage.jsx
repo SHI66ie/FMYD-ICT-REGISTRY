@@ -23,6 +23,37 @@ function getInitialDate() {
   return new Date().toISOString().split('T')[0];
 }
 
+function InputField({
+  label,
+  name,
+  type = 'text',
+  value,
+  onChange,
+  error,
+  required = false,
+  className = '',
+  placeholder = '',
+}) {
+  return (
+    <div className={className}>
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={value ?? ''}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={`w-full px-3 py-2 border rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#008751] focus:border-[#008751] transition-colors ${
+          error ? 'border-red-400 bg-red-50' : 'border-slate-300'
+        }`}
+      />
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
+
 export default function FileFormPage() {
   const { id } = useParams();
   const isEdit = !!id;
@@ -153,24 +184,6 @@ export default function FileFormPage() {
     }
   };
 
-  const InputField = ({ label, name, type = 'text', required = false, className = '' }) => (
-    <div className={className}>
-      <label className="block text-sm font-medium text-slate-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={form[name]}
-        onChange={handleChange}
-        className={`w-full px-3 py-2 border rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
-          errors[name] ? 'border-red-400 bg-red-50' : 'border-slate-300'
-        }`}
-      />
-      {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
-    </div>
-  );
-
   if (fetching) {
     return (
       <Layout>
@@ -208,12 +221,40 @@ export default function FileFormPage() {
               File Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField label="File Number" name="fileNumber" required />
-              <InputField label="Date Logged" name="dateLogged" type="date" required />
+              <InputField
+                label="File Number"
+                name="fileNumber"
+                value={form.fileNumber}
+                onChange={handleChange}
+                error={errors.fileNumber}
+                required
+              />
+              <InputField
+                label="Date Logged"
+                name="dateLogged"
+                type="date"
+                value={form.dateLogged}
+                onChange={handleChange}
+                error={errors.dateLogged}
+                required
+              />
               <div className="sm:col-span-2">
-                <InputField label="Title / Subject" name="title" required />
+                <InputField
+                  label="Title / Subject"
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  error={errors.title}
+                  required
+                />
               </div>
-              <InputField label="Reference Number" name="referenceNumber" />
+              <InputField
+                label="Reference Number"
+                name="referenceNumber"
+                value={form.referenceNumber}
+                onChange={handleChange}
+                error={errors.referenceNumber}
+              />
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Type <span className="text-red-500">*</span>
@@ -244,9 +285,30 @@ export default function FileFormPage() {
               Routing Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField label="Origin (From)" name="origin" required />
-              <InputField label="Destination (To)" name="destination" required />
-              <InputField label="Action Officer" name="actionOfficer" required />
+              <InputField
+                label="Origin (From)"
+                name="origin"
+                value={form.origin}
+                onChange={handleChange}
+                error={errors.origin}
+                required
+              />
+              <InputField
+                label="Destination (To)"
+                name="destination"
+                value={form.destination}
+                onChange={handleChange}
+                error={errors.destination}
+                required
+              />
+              <InputField
+                label="Action Officer"
+                name="actionOfficer"
+                value={form.actionOfficer}
+                onChange={handleChange}
+                error={errors.actionOfficer}
+                required
+              />
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Status <span className="text-red-500">*</span>

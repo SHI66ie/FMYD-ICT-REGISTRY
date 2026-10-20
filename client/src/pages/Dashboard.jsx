@@ -158,13 +158,18 @@ export default function Dashboard() {
         <div className="bg-gradient-to-r from-[#0a3821] via-[#008751] to-[#0a3821] rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
           <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-white/5 skew-x-12 pointer-events-none" />
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                <span className="text-[11px] font-semibold tracking-wider uppercase text-emerald-200">Department of Information & Communications Technology</span>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-white p-1.5 shrink-0 shadow-md hidden sm:flex items-center justify-center border border-white/20">
+                <img src="/fmyd-logo.png" alt="FMYD Logo" className="w-full h-full object-contain" />
               </div>
-              <h2 className="text-xl md:text-2xl font-bold tracking-tight">Federal Ministry of Youth Development</h2>
-              <p className="text-emerald-100/90 text-xs md:text-sm mt-1">Official Incoming & Outgoing File Registry System</p>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                  <span className="text-[11px] font-semibold tracking-wider uppercase text-emerald-200">Department of Information & Communications Technology</span>
+                </div>
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight">Federal Ministry of Youth Development</h2>
+                <p className="text-emerald-100/90 text-xs md:text-sm mt-1">Official Incoming & Outgoing File Registry System</p>
+              </div>
             </div>
             <Link
               to="/files/new"

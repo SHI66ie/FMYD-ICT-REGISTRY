@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const authRoutes = require('./routes/auth');
 const filesRoutes = require('./routes/files');
@@ -38,7 +39,19 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── 404 Handler ─────────────────────────────────────────────────────────────
+// ─── Serve Built Frontend in Production ───────────────────────────────────────
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
+
+// ─── 404 Handler (for unmatched API routes) ──────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });

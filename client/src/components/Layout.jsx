@@ -63,20 +63,14 @@ export default function Layout({ children }) {
 
   const filteredLinks = navLinks.filter((link) => !link.adminOnly || isAdmin);
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <div className="flex flex-col h-full bg-[#0a3821] text-white">
       {/* Logo / Branding */}
       <div className="px-5 py-5 border-b border-[#145a37]">
         <div className="flex items-center gap-3">
-          {/* Nigerian Flag Emblem Icon */}
-          <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden p-1">
-            <div className="w-full h-full flex rounded">
-              <div className="w-1/3 h-full bg-[#008751]" />
-              <div className="w-1/3 h-full bg-white flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#008751]" />
-              </div>
-              <div className="w-1/3 h-full bg-[#008751]" />
-            </div>
+          {/* Official FMYD Logo */}
+          <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden p-1 border border-emerald-900/30">
+            <img src="/fmyd-logo.png" alt="FMYD Logo" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
@@ -131,7 +125,7 @@ export default function Layout({ children }) {
     <div className="flex h-screen overflow-hidden bg-[#f4f8f5]">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:flex-col w-64 shrink-0 shadow-xl z-20">
-        <SidebarContent />
+        {sidebarContent}
       </aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -148,7 +142,7 @@ export default function Layout({ children }) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <SidebarContent />
+        {sidebarContent}
       </aside>
 
       {/* Main content container */}

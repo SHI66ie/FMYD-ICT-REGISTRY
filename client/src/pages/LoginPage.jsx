@@ -58,12 +58,9 @@ export default function LoginPage() {
               <div className="w-1/3 bg-[#008751]" />
             </div>
 
-            {/* Shield / Logo */}
-            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-inner">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
+            {/* Official FMYD Logo */}
+            <div className="w-20 h-20 rounded-2xl bg-white p-2.5 flex items-center justify-center mx-auto mb-3 shadow-lg border border-emerald-100">
+              <img src="/fmyd-logo.png" alt="Federal Ministry of Youth Development Logo" className="w-full h-full object-contain" />
             </div>
 
             <p className="text-[11px] font-semibold tracking-widest uppercase text-emerald-200">Federal Republic of Nigeria</p>

@@ -43,6 +43,37 @@ function Modal({ title, onClose, children }) {
   );
 }
 
+function FormField({
+  label,
+  name,
+  type = 'text',
+  placeholder = '',
+  required = false,
+  value,
+  onChange,
+  error,
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={value ?? ''}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={name === 'password' ? 'new-password' : 'off'}
+        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#008751] transition-colors ${
+          error ? 'border-red-400 bg-red-50' : 'border-slate-300'
+        }`}
+      />
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  );
+}
+
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
@@ -171,26 +202,6 @@ export default function UsersPage() {
     }
   };
 
-  const FormField = ({ label, name, type = 'text', placeholder = '', required = false }) => (
-    <div>
-      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={form[name]}
-        onChange={handleChange}
-        placeholder={placeholder}
-        autoComplete={name === 'password' ? 'new-password' : 'off'}
-        className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#008751] transition-colors ${
-          formErrors[name] ? 'border-red-400 bg-red-50' : 'border-slate-300'
-        }`}
-      />
-      {formErrors[name] && <p className="text-red-500 text-xs mt-1">{formErrors[name]}</p>}
-    </div>
-  );
-
   return (
     <Layout>
       <div className="space-y-5">
@@ -312,13 +323,32 @@ export default function UsersPage() {
           onClose={closeModal}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField label="Full Name" name="fullName" placeholder="e.g. John Okon" required />
-            <FormField label="Username" name="username" placeholder="e.g. johno" required />
+            <FormField
+              label="Full Name"
+              name="fullName"
+              placeholder="e.g. John Okon"
+              value={form.fullName}
+              onChange={handleChange}
+              error={formErrors.fullName}
+              required
+            />
+            <FormField
+              label="Username"
+              name="username"
+              placeholder="e.g. johno"
+              value={form.username}
+              onChange={handleChange}
+              error={formErrors.username}
+              required
+            />
             <FormField
               label={modalMode === 'edit' ? 'New Password (leave blank to keep current)' : 'Password'}
               name="password"
               type="password"
               placeholder={modalMode === 'edit' ? 'Leave blank to keep current' : 'Min. 6 characters'}
+              value={form.password}
+              onChange={handleChange}
+              error={formErrors.password}
               required={modalMode === 'add'}
             />
             <div>

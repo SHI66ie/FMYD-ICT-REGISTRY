@@ -134,6 +134,7 @@ export default function FileDetailPage() {
 
         {/* Print header (only shows on physical print) */}
         <div className="hidden print:block mb-6 text-center border-b pb-4">
+          <img src="/fmyd-logo.png" alt="FMYD Logo" className="w-16 h-16 mx-auto mb-2 object-contain" />
           <p className="text-xs tracking-widest font-bold uppercase text-slate-500">Federal Republic of Nigeria</p>
           <h1 className="text-lg font-extrabold text-[#008751]">FEDERAL MINISTRY OF YOUTH DEVELOPMENT</h1>
           <p className="text-sm font-semibold text-slate-700">Department of Information & Communications Technology</p>
