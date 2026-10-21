@@ -11,6 +11,7 @@ const PAGE_SIZE = 15;
 
 const STATUS_OPTIONS = ['All', 'Pending', 'In Progress', 'Completed', 'Returned'];
 const TYPE_OPTIONS = ['All', 'Incoming', 'Outgoing'];
+const CATEGORY_OPTIONS = ['All', 'Correspondence', 'Report', 'Memo', 'Other'];
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -33,6 +34,7 @@ export default function FilesPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -48,6 +50,7 @@ export default function FilesPage() {
       if (search.trim()) params.search = search.trim();
       if (typeFilter !== 'All') params.type = typeFilter.toLowerCase();
       if (statusFilter !== 'All') params.status = statusFilter;
+      if (categoryFilter !== 'All') params.category = categoryFilter;
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
 
@@ -65,7 +68,7 @@ export default function FilesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, typeFilter, statusFilter, startDate, endDate]);
+  }, [page, search, typeFilter, statusFilter, categoryFilter, startDate, endDate]);
 
   useEffect(() => {
     fetchFiles();
@@ -201,6 +204,17 @@ export default function FilesPage() {
             >
               {STATUS_OPTIONS.map((o) => (
                 <option key={o} value={o}>{o === 'All' ? 'All Statuses' : o}</option>
+              ))}
+            </select>
+
+            {/* Category filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#008751]"
+            >
+              {CATEGORY_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o === 'All' ? 'All Categories' : o}</option>
               ))}
             </select>
 

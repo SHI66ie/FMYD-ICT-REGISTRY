@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getFile } from '../api/files.js';
+import { getFile, addReceipt, deleteReceipt } from '../api/files.js';
 import Layout from '../components/Layout.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import TypeBadge from '../components/TypeBadge.jsx';
@@ -30,6 +30,10 @@ export default function FileDetailPage() {
   const navigate = useNavigate();
   const [fileData, setFileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [receipts, setReceipts] = useState([]);
+  const [showAddReceipt, setShowAddReceipt] = useState(false);
+  const [receiptForm, setReceiptForm] = useState({ receivedBy: '', subject: '', category: 'Correspondence' });
+  const [addingReceipt, setAddingReceipt] = useState(false);
 
   useEffect(() => {
     fetchFile();
@@ -39,7 +43,9 @@ export default function FileDetailPage() {
     try {
       const res = await getFile(id);
       const data = res.data;
-      setFileData(data.file || data);
+      const fileObj = data.file || data;
+      setFileData(fileObj);
+      setReceipts(fileObj.receipts || []);
     } catch {
       toast.error('Failed to load file details');
       navigate('/files');
@@ -178,6 +184,159 @@ export default function FileDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Receipts Card */}
+        <div className="bg-white rounded-xl border border-emerald-100 shadow-xs overflow-hidden">
+          <div className="px-6 py-4 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-4 rounded-full bg-[#008751]" />
+              <h3 className="font-bold text-slate-800 text-sm">Receipt History</h3>
+              <span className="text-xs bg-emerald-100 text-[#008751] px-2 py-0.5 rounded-full font-semibold">
+                {receipts.length}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowAddReceipt(!showAddReceipt)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#008751] border border-emerald-300 hover:bg-emerald-50 rounded-lg transition-colors no-print"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Receipt
+            </button>
+          </div>
+
+          {/* Add Receipt Form */}
+          {showAddReceipt && (
+            <div className="px-6 py-4 bg-emerald-50/50 border-b border-emerald-100 no-print">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Received By *</label>
+                  <input
+                    type="text"
+                    value={receiptForm.receivedBy}
+                    onChange={(e) => setReceiptForm(prev => ({ ...prev, receivedBy: e.target.value }))}
+                    placeholder="Officer name..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#008751]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Subject</label>
+                  <input
+                    type="text"
+                    value={receiptForm.subject}
+                    onChange={(e) => setReceiptForm(prev => ({ ...prev, subject: e.target.value }))}
+                    placeholder="Subject..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#008751]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Category *</label>
+                  <select
+                    value={receiptForm.category}
+                    onChange={(e) => setReceiptForm(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#008751]"
+                  >
+                    {['Correspondence', 'Report', 'Memo', 'Other'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={async () => {
+                    if (!receiptForm.receivedBy.trim()) {
+                      toast.error('Received By is required');
+                      return;
+                    }
+                    setAddingReceipt(true);
+                    try {
+                      const res = await addReceipt(fileId, {
+                        received_by: receiptForm.receivedBy,
+                        subject: receiptForm.subject,
+                        category: receiptForm.category,
+                      });
+                      const newReceipt = res.data.receipt;
+                      setReceipts(prev => [newReceipt, ...prev]);
+                      setReceiptForm({ receivedBy: '', subject: '', category: 'Correspondence' });
+                      setShowAddReceipt(false);
+                      toast.success('Receipt added');
+                    } catch {
+                      toast.error('Failed to add receipt');
+                    } finally {
+                      setAddingReceipt(false);
+                    }
+                  }}
+                  disabled={addingReceipt}
+                  className="px-4 py-1.5 bg-[#008751] hover:bg-[#007242] text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {addingReceipt ? 'Adding...' : 'Save Receipt'}
+                </button>
+                <button
+                  onClick={() => setShowAddReceipt(false)}
+                  className="px-4 py-1.5 border border-slate-300 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Receipts List */}
+          {receipts.length > 0 ? (
+            <div className="divide-y divide-emerald-50">
+              {receipts.map((r) => (
+                <div key={r.id} className="px-6 py-3 flex items-center justify-between hover:bg-emerald-50/30 transition-colors">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-[#008751] flex items-center justify-center text-xs font-bold shrink-0">
+                      {(r.receivedBy || r.received_by || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">{r.receivedBy || r.received_by}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-50 text-[#008751] font-medium border border-emerald-200">
+                          {r.category}
+                        </span>
+                        {(r.subject) && (
+                          <span className="text-xs text-slate-500 truncate">{r.subject}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-slate-400">
+                      {r.createdAt || r.created_at ? format(parseISO(r.createdAt || r.created_at), 'dd MMM yyyy') : ''}
+                    </span>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Delete this receipt?')) return;
+                        try {
+                          await deleteReceipt(fileId, r.id);
+                          setReceipts(prev => prev.filter(x => x.id !== r.id));
+                          toast.success('Receipt deleted');
+                        } catch {
+                          toast.error('Failed to delete receipt');
+                        }
+                      }}
+                      className="text-slate-300 hover:text-red-500 transition-colors no-print"
+                      title="Delete receipt"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="px-6 py-8 text-center">
+              <p className="text-sm text-slate-400">No receipts recorded yet</p>
+              <p className="text-xs text-slate-300 mt-1">Click "Add Receipt" to track who received this file</p>
+            </div>
+          )}
         </div>
 
         {/* Scan Preview Card */}

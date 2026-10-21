@@ -46,6 +46,16 @@ db.exec(`
     updated_at       TEXT NOT NULL DEFAULT (DATETIME('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS file_receipts (
+    id          TEXT PRIMARY KEY,
+    file_id     TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+    received_by TEXT NOT NULL,
+    subject     TEXT,
+    category    TEXT NOT NULL CHECK (category IN ('Correspondence','Report','Memo','Other')),
+    created_at  TEXT NOT NULL DEFAULT (DATETIME('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_receipts_file ON file_receipts(file_id);
+
   CREATE INDEX IF NOT EXISTS idx_files_type ON files(type);
   CREATE INDEX IF NOT EXISTS idx_files_status ON files(status);
   CREATE INDEX IF NOT EXISTS idx_files_date_logged ON files(date_logged);

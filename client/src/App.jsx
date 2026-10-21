@@ -7,6 +7,7 @@ import FilesPage from './pages/FilesPage.jsx';
 import FileFormPage from './pages/FileFormPage.jsx';
 import FileDetailPage from './pages/FileDetailPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 
 export default function App() {
   return (
@@ -85,6 +86,16 @@ export default function App() {
           element={
             <AuthGuard adminOnly>
               <UsersPage />
+            </AuthGuard>
+          }
+        />
+
+        {/* Settings */}
+        <Route
+          path="/settings"
+          element={
+            <AuthGuard>
+              <SettingsPage />
             </AuthGuard>
           }
         />

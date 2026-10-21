@@ -1,142 +1,88 @@
 @echo off
 :: ============================================================
-::  FMYD ICT Registry — One-Time Backup Setup
-::  Run this ONCE to install rclone and connect Google Drive
+::  FMYD ICT Registry — Google Drive Backup Setup
 :: ============================================================
-title FMYD ICT Registry - Backup Setup
+title FMYD ICT Registry - Google Drive Setup
+cd /d "%~dp0"
 
 echo.
 echo  ==========================================
 echo   FMYD ICT Registry — Cloud Backup Setup
 echo  ==========================================
 echo.
-echo  This will:
-echo    1. Download and install rclone (free)
-echo    2. Connect your Google Drive account
-echo    3. Register an automatic backup task
-echo.
-pause
 
-:: ─── Check for admin rights ───────────────────────────────
-net session >nul 2>&1
-if %errorlevel% neq 0 (
-    echo.
-    echo  [ERROR] Please run this script as Administrator.
-    echo  Right-click setup-backup.bat and choose "Run as administrator"
-    echo.
-    pause
-    exit /b 1
-)
+:: ─── Step 1: Check for rclone ──────────────────────────────
+echo  [1/3] Locating rclone...
 
-:: ─── Step 1: Download rclone ──────────────────────────────
-echo.
-echo  [1/4] Checking for rclone...
+set RCLONE_CMD=rclone
 where rclone >nul 2>&1
-if %errorlevel% equ 0 (
-    echo  rclone is already installed. Skipping download.
-    goto :configure_gdrive
+if %errorlevel% equ 0 goto :rclone_found
+
+if exist "%~dp0..\rclone.exe" (
+    set "RCLONE_CMD=%~dp0..\rclone.exe"
+    goto :rclone_found
+)
+if exist "%~dp0rclone.exe" (
+    set "RCLONE_CMD=%~dp0rclone.exe"
+    goto :rclone_found
+)
+if exist "%LOCALAPPDATA%\Microsoft\WinGet\Packages\Rclone.Rclone_Microsoft.Winget.Source_8wekyb3d8bbwe\rclone-v1.75.1-windows-amd64\rclone.exe" (
+    set "RCLONE_CMD=%LOCALAPPDATA%\Microsoft\WinGet\Packages\Rclone.Rclone_Microsoft.Winget.Source_8wekyb3d8bbwe\rclone-v1.75.1-windows-amd64\rclone.exe"
+    goto :rclone_found
 )
 
-echo  Downloading rclone...
-set RCLONE_DIR=%ProgramFiles%\rclone
-if not exist "%RCLONE_DIR%" mkdir "%RCLONE_DIR%"
-
+echo  rclone not found locally. Downloading portable rclone...
 powershell -Command "Invoke-WebRequest -Uri 'https://downloads.rclone.org/rclone-current-windows-amd64.zip' -OutFile '%TEMP%\rclone.zip' -UseBasicParsing"
 if %errorlevel% neq 0 (
-    echo  [ERROR] Failed to download rclone. Check your internet connection.
+    echo  [ERROR] Failed to download rclone. Please check your internet connection.
     pause
     exit /b 1
 )
-
 powershell -Command "Expand-Archive -Path '%TEMP%\rclone.zip' -DestinationPath '%TEMP%\rclone-extracted' -Force"
-powershell -Command "Copy-Item (Get-ChildItem '%TEMP%\rclone-extracted' -Recurse -Filter 'rclone.exe' | Select-Object -First 1 -ExpandProperty FullName) '%RCLONE_DIR%\rclone.exe' -Force"
+powershell -Command "Copy-Item (Get-ChildItem '%TEMP%\rclone-extracted' -Recurse -Filter 'rclone.exe' | Select-Object -First 1 -ExpandProperty FullName) '%~dp0..\rclone.exe' -Force"
+set "RCLONE_CMD=%~dp0..\rclone.exe"
 
-:: Add rclone to system PATH
-setx /M PATH "%PATH%;%RCLONE_DIR%" >nul 2>&1
-set PATH=%PATH%;%RCLONE_DIR%
-
-echo  rclone installed at: %RCLONE_DIR%\rclone.exe
+:rclone_found
+echo  Using rclone: %RCLONE_CMD%
 
 :: ─── Step 2: Configure Google Drive ──────────────────────
-:configure_gdrive
 echo.
-echo  [2/4] Connecting Google Drive...
+echo  [2/3] Connecting Google Drive account...
 echo.
-echo  ┌──────────────────────────────────────────────────────┐
-echo  │  A browser window will open asking you to log in    │
-echo  │  to Google. Please sign in with the Google account  │
-echo  │  you want to use for backups.                        │
-echo  │                                                      │
-echo  │  When asked for a remote name, type:  gdrive         │
-echo  │  When asked for storage type, choose: Google Drive   │
-echo  │  For all other settings, press Enter (use defaults)  │
-echo  │  When asked "Use auto config?" type:  y              │
-echo  └──────────────────────────────────────────────────────┘
+echo  ┌────────────────────────────────────────────────────────┐
+echo  │  Your default web browser will open in a moment.       │
+echo  │  1. Log into your Google account in the browser.       │
+echo  │  2. Click 'Allow' to grant rclone access.              │
+echo  │  3. Return to this window once completed.              │
+echo  └────────────────────────────────────────────────────────┘
 echo.
-pause
 
-rclone config create gdrive drive scope=drive >nul 2>&1
-rclone config reconnect gdrive:
+"%RCLONE_CMD%" config create gdrive drive scope=drive
 
 echo.
-echo  [3/4] Testing Google Drive connection...
-rclone lsd gdrive: >nul 2>&1
+echo  [3/3] Verifying Google Drive connection...
+"%RCLONE_CMD%" lsd gdrive: >nul 2>&1
 if %errorlevel% neq 0 (
-    echo  [ERROR] Could not connect to Google Drive.
-    echo  Please re-run this setup and follow the login steps carefully.
-    pause
-    exit /b 1
+    echo.
+    echo  [WARNING] Could not immediately verify connection.
+    echo  Attempting reconnect...
+    "%RCLONE_CMD%" config reconnect gdrive:
 )
-echo  Google Drive connected successfully!
 
-:: ─── Step 3: Create backup folder on Google Drive ────────
-echo.
-echo  Creating FMYD-Backup folder on Google Drive...
-rclone mkdir gdrive:FMYD-Backup/database
-rclone mkdir gdrive:FMYD-Backup/uploads
-echo  Folders created.
-
-:: ─── Step 4: Register Windows Task Scheduler ─────────────
-echo.
-echo  [4/4] Registering automatic backup task...
-
-set SCRIPT_DIR=%~dp0
-set PS_SCRIPT=%SCRIPT_DIR%backup.ps1
-
-:: Remove existing task if it exists
-schtasks /delete /tn "FMYD-ICT-Registry-Backup" /f >nul 2>&1
-
-:: Create task: runs every 1 hour, starts at next logon
-schtasks /create ^
-  /tn "FMYD-ICT-Registry-Backup" ^
-  /tr "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%PS_SCRIPT%\"" ^
-  /sc HOURLY ^
-  /mo 1 ^
-  /ru "%USERNAME%" ^
-  /rl HIGHEST ^
-  /f
-
+"%RCLONE_CMD%" lsd gdrive: >nul 2>&1
 if %errorlevel% equ 0 (
-    echo  Backup task registered! Runs every hour automatically.
+    echo.
+    echo  SUCCESS! Google Drive is now connected.
+    echo  Creating backup directory...
+    "%RCLONE_CMD%" mkdir gdrive:FMYD-Backup/database >nul 2>&1
+    "%RCLONE_CMD%" mkdir gdrive:FMYD-Backup/uploads >nul 2>&1
+    echo  Directory 'FMYD-Backup' is ready.
 ) else (
-    echo  [WARNING] Could not register scheduled task automatically.
-    echo  You can still run backup.ps1 manually.
+    echo.
+    echo  [ERROR] Google Drive connection was not completed.
+    echo  Please make sure you granted permissions in the browser.
 )
 
 echo.
-echo  ==========================================
-echo   Setup Complete!
-echo  ==========================================
-echo.
-echo  What was configured:
-echo    * rclone connected to your Google Drive
-echo    * Backup folder: "FMYD-Backup" in Google Drive
-echo    * Auto backup: every 1 hour (when online)
-echo    * Manual backup: double-click run-backup-now.bat
-echo.
-echo  Your Google Drive will contain:
-echo    FMYD-Backup/
-echo      database/   ^<-- PostgreSQL .sql dumps
-echo      uploads/    ^<-- Scanned files (JPG/PNG/PDF)
-echo.
-pause
+echo  Press any key to close this window...
+pause >nul

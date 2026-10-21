@@ -5,6 +5,7 @@ import Layout from '../components/Layout.jsx';
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed', 'Returned'];
+const CATEGORY_OPTIONS = ['Correspondence', 'Report', 'Memo', 'Other'];
 
 const INITIAL_FORM = {
   fileNumber: '',
@@ -17,6 +18,9 @@ const INITIAL_FORM = {
   actionOfficer: '',
   status: 'Pending',
   remarks: '',
+  receivedBy: '',
+  subject: '',
+  category: 'Correspondence',
 };
 
 function getInitialDate() {
@@ -92,6 +96,9 @@ export default function FileFormPage() {
         actionOfficer: f.actionOfficer || '',
         status: f.status || 'Pending',
         remarks: f.remarks || '',
+        receivedBy: '',
+        subject: '',
+        category: 'Correspondence',
       });
       if (f.scanPath || f.scanUrl || f.scan) {
         setExistingScan(f.scanPath || f.scanUrl || f.scan);
@@ -177,7 +184,7 @@ export default function FileFormPage() {
       }
       navigate('/files');
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Failed to save file';
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to save file';
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -337,6 +344,52 @@ export default function FileFormPage() {
                   placeholder="Additional notes or remarks..."
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Receipt Information Card (NEW) */}
+          <div className="bg-white rounded-xl border border-emerald-200 p-6">
+            <h3 className="font-semibold text-slate-800 mb-1 pb-2 border-b border-emerald-100 flex items-center gap-2">
+              <svg className="w-5 h-5 text-[#008751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Receipt Information
+              <span className="ml-2 text-xs font-normal text-slate-400">(Optional — who received the file?)</span>
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Track who received this file. The same file can appear multiple times with different subjects and categories.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InputField
+                label="Received By"
+                name="receivedBy"
+                value={form.receivedBy}
+                onChange={handleChange}
+                placeholder="Name of receiving officer..."
+              />
+              <InputField
+                label="Subject"
+                name="subject"
+                value={form.subject}
+                onChange={handleChange}
+                placeholder="Subject / purpose of receipt..."
+              />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Category
+                </label>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#008751] transition-colors"
+                >
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

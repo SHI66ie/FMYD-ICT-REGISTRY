@@ -9,6 +9,8 @@ const router = express.Router();
 // All file routes require authentication
 router.use(authMiddleware);
 
+const VALID_CATEGORIES = ['Correspondence', 'Report', 'Memo', 'Other'];
+
 // Helper to provide both snake_case and camelCase keys
 function formatFile(row) {
   if (!row) return null;
@@ -25,6 +27,16 @@ function formatFile(row) {
   };
 }
 
+function formatReceipt(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    fileId: row.file_id,
+    receivedBy: row.received_by,
+    createdAt: row.created_at,
+  };
+}
+
 // ─── GET /api/files ───────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
@@ -35,6 +47,7 @@ router.get('/', async (req, res, next) => {
       search,
       type,
       status,
+      category,
       date_from,
       startDate,
       date_to,
@@ -75,6 +88,12 @@ router.get('/', async (req, res, next) => {
         params.push(formattedStatus);
         paramIndex++;
       }
+    }
+
+    if (category && VALID_CATEGORIES.includes(category)) {
+      conditions.push(`EXISTS (SELECT 1 FROM file_receipts r WHERE r.file_id = f.id AND r.category = $${paramIndex})`);
+      params.push(category);
+      paramIndex++;
     }
 
     if (filterDateFrom) {
@@ -146,6 +165,11 @@ router.post('/', upload.single('scan'), async (req, res, next) => {
     const status = req.body.status;
     const remarks = req.body.remarks;
 
+    // New receipt fields (inline on form)
+    const received_by = req.body.received_by || req.body.receivedBy;
+    const subject = req.body.subject;
+    const category = req.body.category;
+
     // Required field validation
     if (!file_number || !title || !date_logged || !type) {
       return res.status(400).json({
@@ -195,7 +219,27 @@ router.post('/', upload.single('scan'), async (req, res, next) => {
       ]
     );
 
-    return res.status(201).json({ file: formatFile(rows[0]) });
+    // If receipt info was provided inline, create a receipt record
+    if (received_by && received_by.trim()) {
+      const receiptId = uuidv4();
+      const receiptCategory = VALID_CATEGORIES.includes(category) ? category : 'Other';
+      await pool.query(
+        `INSERT INTO file_receipts (id, file_id, received_by, subject, category)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [receiptId, id, received_by.trim(), subject ? subject.trim() : null, receiptCategory]
+      );
+    }
+
+    // Fetch receipts for the response
+    const receipts = await pool.query(
+      'SELECT * FROM file_receipts WHERE file_id = $1 ORDER BY created_at DESC',
+      [id]
+    );
+
+    const fileResult = formatFile(rows[0]);
+    fileResult.receipts = receipts.rows.map(formatReceipt);
+
+    return res.status(201).json({ file: fileResult });
   } catch (err) {
     next(err);
   }
@@ -220,7 +264,16 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    return res.json({ file: formatFile(rows[0]) });
+    // Fetch receipts for this file
+    const receipts = await pool.query(
+      'SELECT * FROM file_receipts WHERE file_id = $1 ORDER BY created_at DESC',
+      [req.params.id]
+    );
+
+    const fileResult = formatFile(rows[0]);
+    fileResult.receipts = receipts.rows.map(formatReceipt);
+
+    return res.json({ file: fileResult });
   } catch (err) {
     next(err);
   }
@@ -248,6 +301,11 @@ router.put('/:id', upload.single('scan'), async (req, res, next) => {
     const status = req.body.status;
     const remarks = req.body.remarks;
 
+    // New receipt fields (inline on form)
+    const received_by = req.body.received_by || req.body.receivedBy;
+    const subject = req.body.subject;
+    const category = req.body.category;
+
     if (type && !['incoming', 'outgoing'].includes(type)) {
       return res.status(400).json({ error: 'type must be "incoming" or "outgoing"' });
     }
@@ -273,7 +331,7 @@ router.put('/:id', upload.single('scan'), async (req, res, next) => {
          status          = COALESCE($9, status),
          remarks         = COALESCE($10, remarks),
          scan_path       = $11,
-         updated_at      = NOW()
+         updated_at      = DATETIME('now')
        WHERE id = $12
        RETURNING *`,
       [
@@ -292,7 +350,93 @@ router.put('/:id', upload.single('scan'), async (req, res, next) => {
       ]
     );
 
-    return res.json({ file: formatFile(rows[0]) });
+    // If receipt info was provided inline, create a new receipt record
+    if (received_by && received_by.trim()) {
+      const receiptId = uuidv4();
+      const receiptCategory = VALID_CATEGORIES.includes(category) ? category : 'Other';
+      await pool.query(
+        `INSERT INTO file_receipts (id, file_id, received_by, subject, category)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [receiptId, id, received_by.trim(), subject ? subject.trim() : null, receiptCategory]
+      );
+    }
+
+    // Fetch receipts for the response
+    const receipts = await pool.query(
+      'SELECT * FROM file_receipts WHERE file_id = $1 ORDER BY created_at DESC',
+      [id]
+    );
+
+    const fileResult = formatFile(rows[0]);
+    fileResult.receipts = receipts.rows.map(formatReceipt);
+
+    return res.json({ file: fileResult });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/files/:id/receipts ──────────────────────────────────────────────
+router.get('/:id/receipts', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM file_receipts WHERE file_id = $1 ORDER BY created_at DESC',
+      [req.params.id]
+    );
+    return res.json({ receipts: rows.map(formatReceipt) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/files/:id/receipts ─────────────────────────────────────────────
+router.post('/:id/receipts', async (req, res, next) => {
+  try {
+    // Verify file exists
+    const file = await pool.query('SELECT id FROM files WHERE id = $1', [req.params.id]);
+    if (file.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const received_by = req.body.received_by || req.body.receivedBy;
+    const subject = req.body.subject;
+    const category = req.body.category;
+
+    if (!received_by || !received_by.trim()) {
+      return res.status(400).json({ error: 'received_by is required' });
+    }
+
+    if (!category || !VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: `category must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+
+    const id = uuidv4();
+    await pool.query(
+      `INSERT INTO file_receipts (id, file_id, received_by, subject, category)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, req.params.id, received_by.trim(), subject ? subject.trim() : null, category]
+    );
+
+    const receipt = await pool.query('SELECT * FROM file_receipts WHERE id = $1', [id]);
+    return res.status(201).json({ receipt: formatReceipt(receipt.rows[0]) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── DELETE /api/files/:id/receipts/:receiptId ────────────────────────────────
+router.delete('/:id/receipts/:receiptId', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'DELETE FROM file_receipts WHERE id = $1 AND file_id = $2 RETURNING id',
+      [req.params.receiptId, req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Receipt not found' });
+    }
+
+    return res.json({ message: 'Receipt deleted successfully' });
   } catch (err) {
     next(err);
   }

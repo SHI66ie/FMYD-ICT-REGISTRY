@@ -94,10 +94,21 @@ namespace FMYD.ICT.Registry
                 }
             }
 
-            for (int i = 0; i < 24; i++)
+            bool healthy = false;
+            for (int i = 0; i < 30; i++)
             {
-                if (IsServerHealthy()) break;
+                if (IsServerHealthy())
+                {
+                    healthy = true;
+                    break;
+                }
                 Thread.Sleep(500);
+            }
+
+            if (!healthy && serverProcess != null && serverProcess.HasExited)
+            {
+                MessageBox.Show("The backend server process exited unexpectedly.\nPlease verify your installation.",
+                    "FMYD ICT Registry — Startup Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
